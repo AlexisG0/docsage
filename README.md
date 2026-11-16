@@ -16,7 +16,21 @@ retrieval quality you can measure.
 
 ## Status
 
-Early development. Only the project skeleton exists so far.
+Early development. The project skeleton and the document loaders exist so far.
+
+## Loading documents
+
+Loaders return pydantic `Document` models that keep the source metadata needed for
+citations (`path`, `title`, `headings`, and `page` for PDFs).
+
+```python
+from docsage.loaders import load_file
+
+for doc in load_file("docs/guide.md"):   # .md, .html/.htm and .pdf are supported
+    print(doc.title, doc.headings, doc.page)
+```
+
+Markdown and HTML produce one document per file; PDFs produce one per non-empty page.
 
 ## Development
 
