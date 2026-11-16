@@ -1,0 +1,5 @@
+"""docsage: retrieval-augmented question answering over technical documentation."""
+
+__version__ = "0.0.1"
+
+__all__ = ["__version__"]
