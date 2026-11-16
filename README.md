@@ -26,11 +26,28 @@ citations (`path`, `title`, `headings`, and `page` for PDFs).
 ```python
 from docsage.loaders import load_file
 
-for doc in load_file("docs/guide.md"):   # .md, .html/.htm and .pdf are supported
+for doc in load_file("docs/guide.md"):  # .md, .html/.htm and .pdf are supported
     print(doc.title, doc.headings, doc.page)
 ```
 
 Markdown and HTML produce one document per file; PDFs produce one per non-empty page.
+
+## Chunking
+
+Three strategies turn a `Document` into `Chunk` models that keep the source metadata
+and character offsets (`start`/`end`) into the document text.
+
+```python
+from docsage.chunking import FixedSizeChunker, RecursiveChunker, SentenceWindowChunker
+from docsage.loaders import load_file
+
+doc = load_file("docs/guide.md")[0]
+chunks = RecursiveChunker(max_chars=800).chunk(doc)  # splits on headings, keeps the heading path
+print(chunks[0].headings, chunks[0].text)
+
+FixedSizeChunker(chunk_size=800, overlap=100).chunk(doc)  # sliding window
+SentenceWindowChunker(window=2).chunk(doc)  # one chunk per sentence, `context` has neighbours
+```
 
 ## Development
 
