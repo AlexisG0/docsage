@@ -16,7 +16,9 @@ retrieval quality you can measure.
 
 ## Status
 
-Early development. The project skeleton and the document loaders exist so far.
+Early development. What exists today: the project skeleton, a minimal CLI (`docsage version`),
+document loaders (Markdown, HTML, PDF) and three chunking strategies. Retrieval, answer
+generation, the API and evaluation are still on the roadmap.
 
 ## Loading documents
 
@@ -48,6 +50,11 @@ print(chunks[0].headings, chunks[0].text)
 FixedSizeChunker(chunk_size=800, overlap=100).chunk(doc)  # sliding window
 SentenceWindowChunker(window=2).chunk(doc)  # one chunk per sentence, `context` has neighbours
 ```
+
+Only `RecursiveChunker` fills in `headings` per chunk; the other two leave it empty.
+`chunk_documents(docs, chunker)` chunks a list of documents (for example all pages of a
+PDF) in one call, and chunk `index` restarts for each document. `title` and `page` are
+copied from the document by every strategy.
 
 ## Development
 
