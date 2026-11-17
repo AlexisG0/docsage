@@ -17,7 +17,8 @@ retrieval quality you can measure.
 ## Status
 
 Early development. What exists today: the project skeleton, a minimal CLI (`docsage version`),
-document loaders (Markdown, HTML, PDF) and three chunking strategies. Retrieval, answer
+document loaders (Markdown, HTML, PDF), three chunking strategies and an embedding
+interface. Retrieval, answer
 generation, the API and evaluation are still on the roadmap.
 
 ## Loading documents
@@ -55,6 +56,22 @@ Only `RecursiveChunker` fills in `headings` per chunk; the other two leave it em
 `chunk_documents(docs, chunker)` chunks a list of documents (for example all pages of a
 PDF) in one call, and chunk `index` restarts for each document. `title` and `page` are
 copied from the document by every strategy.
+
+## Embeddings
+
+Embedders implement a two-member `Embedder` protocol (`dimension` and `embed(texts)`) and
+return L2-normalised vectors. `HashingEmbedder` is deterministic and needs no model, which
+makes it the default for tests and offline demos; the sentence-transformers backend is an
+optional extra (`pip install docsage[local]`).
+
+```python
+from docsage.embeddings import cosine, embed_query, load_embedder
+
+embedder = load_embedder("hashing", dimension=256)  # or "sentence-transformers"
+q = embed_query(embedder, "how do I configure logging?")
+d = embedder.embed(["Configure logging in the app"])[0]
+print(cosine(q, d))
+```
 
 ## Development
 
