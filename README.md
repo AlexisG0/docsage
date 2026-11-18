@@ -73,6 +73,39 @@ d = embedder.embed(["Configure logging in the app"])[0]
 print(cosine(q, d))
 ```
 
+## Vector store
+
+Two stores implement the `VectorStore` protocol:
+
+- `InMemoryVectorStore`: pure Python, nothing persisted. Used in tests and for small corpora.
+- `LanceVectorStore`: chunks and vectors in an embedded LanceDB table on disk. It needs the
+  optional extra: `uv sync --extra lance` (or `pip install "docsage[lance]"`).
+
+Chunks are identified by `path`, `page` and `index`, so upserting the same document again
+replaces its chunks. Searches use cosine similarity and can be restricted with equality
+filters on `path`, `title`, `page` and `index`. The tests run against both stores and skip
+the LanceDB ones when the extra is not installed.
+
+```python
+from docsage.embeddings import HashingEmbedder
+from docsage.loaders import load_file
+from docsage.chunking import RecursiveChunker
+from docsage.vectorstore import LanceVectorStore
+
+embedder = HashingEmbedder()
+store = LanceVectorStore(".docsage/index", embedder.dimension)
+
+chunks = RecursiveChunker(max_chars=800).chunk(load_file("docs/guide.md")[0])
+store.upsert(chunks, embedder.embed([c.text for c in chunks]))
+
+for hit in store.search(
+    embedder.embed(["how do I install it?"])[0], k=3, filters={"path": "docs/guide.md"}
+):
+    print(round(hit.score, 3), hit.chunk.headings, hit.chunk.text[:60])
+
+store.delete(path="docs/guide.md")  # remove every chunk of a document
+```
+
 ## Development
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
