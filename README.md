@@ -106,6 +106,30 @@ for hit in store.search(
 store.delete(path="docs/guide.md")  # remove every chunk of a document
 ```
 
+## Keyword search
+
+`BM25Index` is a pure-Python Okapi BM25 index over chunk text. It uses the same chunk ids and
+metadata filters as the vector stores, and is saved to and loaded from a single JSON file.
+Exact identifiers such as `max_chars` are tokenized as one term, which is where keyword search
+beats embeddings.
+
+```python
+from docsage.keyword import BM25Index
+
+index = BM25Index()
+index.add(chunks)  # the chunks from the example above
+index.save(".docsage/bm25.json")
+
+index = BM25Index.load(".docsage/bm25.json")
+for hit in index.search("max_chars", k=3):
+    print(round(hit.score, 2), hit.id)
+
+index.delete(path="docs/guide.md")
+```
+
+BM25 scores are not comparable with cosine similarities; the hybrid retriever (next on the
+roadmap) combines the two by rank.
+
 ## Development
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
