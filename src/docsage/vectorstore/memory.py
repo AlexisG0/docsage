@@ -45,10 +45,11 @@ class InMemoryVectorStore:
     def delete(self, *, path: str | None = None, ids: list[str] | None = None) -> int:
         if path is None and ids is None:
             return 0
+        wanted = set(ids) if ids is not None else None
         doomed = [
             rid
             for rid, (chunk, _) in self._rows.items()
-            if (path is None or chunk.path == path) and (ids is None or rid in ids)
+            if (path is None or chunk.path == path) and (wanted is None or rid in wanted)
         ]
         for rid in doomed:
             del self._rows[rid]
@@ -73,7 +74,7 @@ class InMemoryVectorStore:
             for rid, (chunk, vec) in self._rows.items()
             if all(_field(chunk, key) == value for key, value in filters.items())
         ]
-        hits.sort(key=lambda h: h.score, reverse=True)
+        hits.sort(key=lambda h: (-h.score, h.id))  # ties broken by id: deterministic
         return hits[:k]
 
     def count(self) -> int:

@@ -108,3 +108,21 @@ def test_empty_store_and_bad_input(kind: str, tmp_path: Path, emb: HashingEmbedd
     assert s.upsert([], []) == 0
     with pytest.raises(ValueError):
         s.upsert(make_chunks()[:1], [[0.0] * 3])
+
+
+def test_memory_ties_are_ordered_by_id(emb: HashingEmbedder) -> None:
+    s = make_store("memory", Path("."), emb.dimension)
+    chunks = make_chunks()[:2]
+    vec = emb.embed(["same text"])[0]
+    s.upsert(list(reversed(chunks)), [vec, vec])
+    ids = [h.id for h in s.search(vec, k=2)]
+    assert ids == sorted(ids)
+
+
+def test_delete_without_criteria_is_a_noop(emb: HashingEmbedder) -> None:
+    s = make_store("memory", Path("."), emb.dimension)
+    chunks = make_chunks()
+    s.upsert(chunks, emb.embed([c.text for c in chunks]))
+    assert s.delete() == 0
+    assert s.delete(ids=[]) == 0
+    assert s.count() == len(chunks)
