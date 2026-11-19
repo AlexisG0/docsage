@@ -17,9 +17,9 @@ retrieval quality you can measure.
 ## Status
 
 Early development. What exists today: the project skeleton, a minimal CLI (`docsage version`),
-document loaders (Markdown, HTML, PDF), three chunking strategies and an embedding
-interface. Retrieval, answer
-generation, the API and evaluation are still on the roadmap.
+document loaders (Markdown, HTML, PDF), three chunking strategies, an embedding interface,
+vector stores, a BM25 index and hybrid retrieval with reciprocal rank fusion. Reranking,
+answer generation, the API and evaluation are still on the roadmap.
 
 ## Loading documents
 
@@ -127,8 +127,31 @@ for hit in index.search("max_chars", k=3):
 index.delete(path="docs/guide.md")
 ```
 
-BM25 scores are not comparable with cosine similarities; the hybrid retriever (next on the
-roadmap) combines the two by rank.
+BM25 scores are not comparable with cosine similarities, so the hybrid retriever combines the
+two by rank.
+
+## Hybrid retrieval
+
+`HybridRetriever` runs BM25 and vector search, then fuses the two rankings with weighted
+reciprocal rank fusion: a chunk scores `sum(weight / (rrf_k + rank))` over the lists it
+appears in. Metadata filters apply to both sides. A weight of 0 turns a retriever off.
+
+```python
+from docsage.embeddings import HashingEmbedder
+from docsage.keyword import BM25Index
+from docsage.retrieval import HybridRetriever
+from docsage.vectorstore.memory import InMemoryVectorStore
+
+embedder = HashingEmbedder(dimension=256)
+store = InMemoryVectorStore(dimension=256)
+store.upsert(chunks, embedder.embed([c.text for c in chunks]))
+index = BM25Index()
+index.add(chunks)
+
+retriever = HybridRetriever(store, index, embedder, keyword_weight=1.0, vector_weight=1.0)
+for hit in retriever.search("how do I set max_chars?", k=3):
+    print(round(hit.score, 4), hit.id)
+```
 
 ## Development
 
