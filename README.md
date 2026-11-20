@@ -19,7 +19,7 @@ retrieval quality you can measure.
 Early development. What exists today: the project skeleton, a minimal CLI (`docsage version`),
 document loaders (Markdown, HTML, PDF), three chunking strategies, an embedding interface,
 vector stores, a BM25 index, hybrid retrieval with reciprocal rank fusion and optional
-reranking and LLM provider interfaces. Answer generation, the full CLI, the API and evaluation are still
+reranking, LLM provider interfaces and grounded answer generation. The full CLI, the API and evaluation are still
 on the roadmap. The LanceDB store is not yet tested against a real install; the in-memory
 store is what the examples below and the test suite exercise.
 
@@ -188,6 +188,24 @@ llm = load_llm("ollama", model="llama3.1")  # or "openai" / "anthropic"
 # Tests use a scripted fake that replays replies and records calls.
 fake = ScriptedLLM(["Reciprocal rank fusion merges ranked lists."])
 print(fake.complete([Message("user", "What is RRF?")]))
+```
+
+## Answers with citations
+
+`answer_question` numbers the retrieved passages, asks the LLM to cite them as `[n]` and
+returns the text with the passages it actually cited. Citations that point at a passage that
+was not provided are ignored, and with no retrieved hits the model is not called.
+
+```python
+from docsage.answer import answer_question
+from docsage.chunking.base import Chunk
+from docsage.llm import ScriptedLLM
+from docsage.vectorstore.base import SearchHit
+
+chunk = Chunk(text="RRF merges ranked lists.", path="docs/rrf.md", index=0, start=0, end=24)
+hits = [SearchHit(id="docs/rrf.md#p0#0", chunk=chunk, score=0.9)]
+answer = answer_question(ScriptedLLM(["RRF merges ranked lists [1]."]), "What is RRF?", hits)
+print(answer.text, [s.path for s in answer.sources])
 ```
 
 ## Development
