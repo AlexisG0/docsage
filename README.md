@@ -153,6 +153,23 @@ for hit in retriever.search("how do I set max_chars?", k=3):
     print(round(hit.score, 4), hit.id)
 ```
 
+## Reranking
+
+A `Reranker` scores `(query, passage)` pairs; pass one to `HybridRetriever` and it rescores
+the fused candidate pool (`4 * k` by default) before returning the top `k`. The reranked
+hits carry the reranker's score instead of the fused RRF score.
+
+```python
+from docsage.retrieval import CrossEncoderReranker, HybridRetriever
+
+reranker = CrossEncoderReranker()  # needs `pip install docsage[local]`
+retriever = HybridRetriever(store, index, embedder, reranker=reranker)
+hits = retriever.search("how do I set max_chars?", k=3)
+```
+
+`OverlapReranker` is a deterministic stand-in used in tests. Any object with a
+`score(query, passages) -> list[float]` method works.
+
 ## Development
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).

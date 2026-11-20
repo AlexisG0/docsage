@@ -6,6 +6,7 @@ from typing import Any
 
 from docsage.embeddings.base import Embedder, embed_query
 from docsage.keyword.bm25 import BM25Index
+from docsage.retrieval.rerank import Reranker, rerank
 from docsage.vectorstore.base import SearchHit, VectorStore
 
 
@@ -56,6 +57,7 @@ class HybridRetriever:
         keyword_weight: float = 1.0,
         vector_weight: float = 1.0,
         rrf_k: int = 60,
+        reranker: Reranker | None = None,
     ) -> None:
         if keyword_weight < 0 or vector_weight < 0:
             raise ValueError("weights must be non-negative")
@@ -67,6 +69,7 @@ class HybridRetriever:
         self.keyword_weight = keyword_weight
         self.vector_weight = vector_weight
         self.rrf_k = rrf_k
+        self.reranker = reranker
 
     def search(
         self,
@@ -88,4 +91,8 @@ class HybridRetriever:
             vector = embed_query(self.embedder, query)
             rankings.append(self.store.search(vector, k=n, filters=filters))
             weights.append(self.vector_weight)
-        return reciprocal_rank_fusion(rankings, weights, self.rrf_k)[:k]
+        fused = reciprocal_rank_fusion(rankings, weights, self.rrf_k)
+        if self.reranker is not None:
+            # The reranker rescores the whole fused candidate pool, not just the top k.
+            return rerank(self.reranker, query, fused[:n], k)
+        return fused[:k]
