@@ -18,8 +18,10 @@ retrieval quality you can measure.
 
 Early development. What exists today: the project skeleton, a minimal CLI (`docsage version`),
 document loaders (Markdown, HTML, PDF), three chunking strategies, an embedding interface,
-vector stores, a BM25 index and hybrid retrieval with reciprocal rank fusion. Reranking,
-answer generation, the API and evaluation are still on the roadmap.
+vector stores, a BM25 index, hybrid retrieval with reciprocal rank fusion and optional
+reranking. LLM providers, answer generation, the full CLI, the API and evaluation are still
+on the roadmap. The LanceDB store is not yet tested against a real install; the in-memory
+store is what the examples below and the test suite exercise.
 
 ## Loading documents
 
