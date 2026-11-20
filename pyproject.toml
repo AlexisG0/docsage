@@ -15,6 +15,8 @@ dependencies = [
 # Heavy backends are opt-in; the test suite never needs them.
 local = ["sentence-transformers>=3.0"]
 lance = ["lancedb>=0.41.0"]
+openai = ["openai>=1.40"]
+anthropic = ["anthropic>=0.40"]
 
 [project.scripts]
 docsage = "docsage.cli:app"
@@ -53,5 +55,5 @@ files = ["src", "tests"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["sentence_transformers", "sentence_transformers.*", "lancedb", "lancedb.*"]
+module = ["sentence_transformers", "sentence_transformers.*", "lancedb", "lancedb.*", "openai", "openai.*", "anthropic", "anthropic.*"]
 ignore_missing_imports = true

@@ -19,7 +19,7 @@ retrieval quality you can measure.
 Early development. What exists today: the project skeleton, a minimal CLI (`docsage version`),
 document loaders (Markdown, HTML, PDF), three chunking strategies, an embedding interface,
 vector stores, a BM25 index, hybrid retrieval with reciprocal rank fusion and optional
-reranking. LLM providers, answer generation, the full CLI, the API and evaluation are still
+reranking and LLM provider interfaces. Answer generation, the full CLI, the API and evaluation are still
 on the roadmap. The LanceDB store is not yet tested against a real install; the in-memory
 store is what the examples below and the test suite exercise.
 
@@ -171,6 +171,24 @@ hits = retriever.search("how do I set max_chars?", k=3)
 
 `OverlapReranker` is a deterministic stand-in used in tests. Any object with a
 `score(query, passages) -> list[float]` method works.
+
+## LLM providers
+
+Answer generation talks to a small `LLM` protocol with a single `complete(messages)` method.
+Backends: `openai` (`pip install docsage[openai]`), `anthropic` (`docsage[anthropic]`) and
+`ollama` (plain HTTP, no extra). Keys and host come from `OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY` and `OLLAMA_HOST` (see `.env.example`).
+
+```python
+from docsage.llm import Message, ScriptedLLM, load_llm
+
+llm = load_llm("ollama", model="llama3.1")  # or "openai" / "anthropic"
+# llm.complete([Message("user", "What is RRF?")])
+
+# Tests use a scripted fake that replays replies and records calls.
+fake = ScriptedLLM(["Reciprocal rank fusion merges ranked lists."])
+print(fake.complete([Message("user", "What is RRF?")]))
+```
 
 ## Development
 
