@@ -16,11 +16,11 @@ retrieval quality you can measure.
 
 ## Status
 
-Early development. What exists today: the project skeleton, a minimal CLI (`docsage version`),
+Early development. What exists today: the project skeleton, a CLI (`ingest`, `ask`, `stats`),
 document loaders (Markdown, HTML, PDF), three chunking strategies, an embedding interface,
 vector stores, a BM25 index, hybrid retrieval with reciprocal rank fusion and optional
-reranking, LLM provider interfaces and grounded answer generation. The full CLI, the API and evaluation are still
-on the roadmap. The LanceDB store is not yet tested against a real install; the in-memory
+reranking, LLM provider interfaces and grounded answer generation. The API and evaluation are
+still on the roadmap. The LanceDB store is not yet tested against a real install; the in-memory
 store is what the examples below and the test suite exercise.
 
 ## Loading documents
@@ -207,6 +207,21 @@ hits = [SearchHit(id="docs/rrf.md#p0#0", chunk=chunk, score=0.9)]
 answer = answer_question(ScriptedLLM(["RRF merges ranked lists [1]."]), "What is RRF?", hits)
 print(answer.text, [s.path for s in answer.sources])
 ```
+
+## Command line
+
+```sh
+docsage ingest docs/ --home .docsage          # files or directories (.md, .html, .pdf)
+docsage stats --home .docsage
+docsage ask "How do I configure X?" --llm ollama --model llama3 --k 5
+```
+
+The index lives in `--home` (default `.docsage`, or `DOCSAGE_HOME`): a BM25 file plus a JSON
+file of vectors. Re-ingesting a file replaces its old chunks. `--chunker` picks `recursive`,
+`fixed` or `sentence`; `--embedder` picks `hashing` (default, offline) or
+`sentence-transformers`. Use the same embedder for `ingest` and `ask`. `ask` prints the answer
+followed by the cited sources; the LLM needs the matching extra and credentials (see
+`.env.example`).
 
 ## Development
 
