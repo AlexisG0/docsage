@@ -17,6 +17,10 @@ local = ["sentence-transformers>=3.0"]
 lance = ["lancedb>=0.41.0"]
 openai = ["openai>=1.40"]
 anthropic = ["anthropic>=0.40"]
+api = [
+    "fastapi>=0.110",
+    "uvicorn>=0.30",
+]
 
 [project.scripts]
 docsage = "docsage.cli:app"
@@ -28,6 +32,9 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "reportlab>=5.1.0",
+    "httpx>=0.28.1",
+    "uvicorn>=0.30",
+    "fastapi>=0.110",
 ]
 
 [build-system]

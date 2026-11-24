@@ -17,9 +17,10 @@ retrieval quality you can measure.
 ## Status
 
 Early development. What exists today: the project skeleton, a CLI (`ingest`, `ask`, `stats`),
+a FastAPI service (`/ingest`, `/query`, `/health`),
 document loaders (Markdown, HTML, PDF), three chunking strategies, an embedding interface,
 vector stores, a BM25 index, hybrid retrieval with reciprocal rank fusion and optional
-reranking, LLM provider interfaces and grounded answer generation. The API and evaluation are
+reranking, LLM provider interfaces and grounded answer generation. Evaluation is
 still on the roadmap. The LanceDB store is not yet tested against a real install; the in-memory
 store is what the examples below and the test suite exercise.
 
@@ -222,6 +223,28 @@ file of vectors. Re-ingesting a file replaces its old chunks. `--chunker` picks 
 `sentence-transformers`. Use the same embedder for `ingest` and `ask`. `ask` prints the answer
 followed by the cited sources; the LLM needs the matching extra and credentials (see
 `.env.example`).
+
+## HTTP API
+
+```sh
+uv sync --extra api
+uvicorn docsage.api:create_app --factory
+```
+
+It uses the same index as the CLI and is configured with `DOCSAGE_HOME`, `DOCSAGE_EMBEDDER`,
+`DOCSAGE_LLM` and `DOCSAGE_LLM_MODEL`. Interactive docs, with request examples, are at `/docs`.
+
+```sh
+curl -X POST localhost:8000/ingest -H 'content-type: application/json' -d \
+  '{"documents": [{"path": "guide/install.md", "content": "# Install\n\nRun pip install docsage.\n"}]}'
+curl -X POST localhost:8000/query -H 'content-type: application/json' -d \
+  '{"question": "How do I install it?", "k": 5}'
+curl localhost:8000/health
+```
+
+`/ingest` takes document text in the request body (`.md` or `.html`; the server never reads
+paths from its own disk) and replaces anything already indexed under the same `path`. `/query`
+returns `{"answer": ..., "sources": [...]}` with the numbered sources the answer cites.
 
 ## Development
 
