@@ -191,6 +191,19 @@ fake = ScriptedLLM(["Reciprocal rank fusion merges ranked lists."])
 print(fake.complete([Message("user", "What is RRF?")]))
 ```
 
+## Query expansion
+
+`MultiQueryRetriever` wraps any retriever (such as `HybridRetriever`), asks an LLM for alternative
+phrasings of the question, searches with each and fuses the rankings with reciprocal rank fusion.
+With `rewrite=True` the question is first turned into a standalone search query.
+
+```python
+from docsage.retrieval import MultiQueryRetriever
+
+retriever = MultiQueryRetriever(hybrid, llm, n_queries=3, rewrite=True)
+hits = retriever.search("how do i make it time out sooner?", k=5)
+```
+
 ## Answers with citations
 
 `answer_question` numbers the retrieved passages, asks the LLM to cite them as `[n]` and
