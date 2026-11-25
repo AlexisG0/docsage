@@ -20,8 +20,7 @@ Early development. What exists today: the project skeleton, a CLI (`ingest`, `as
 a FastAPI service (`/ingest`, `/query`, `/health`),
 document loaders (Markdown, HTML, PDF), three chunking strategies, an embedding interface,
 vector stores, a BM25 index, hybrid retrieval with reciprocal rank fusion and optional
-reranking, LLM provider interfaces and grounded answer generation. Evaluation is
-still on the roadmap. The LanceDB store is not yet tested against a real install; the in-memory
+reranking, LLM provider interfaces, grounded answer generation and retrieval evaluation. The LanceDB store is not yet tested against a real install; the in-memory
 store is what the examples below and the test suite exercise.
 
 ## Loading documents
@@ -236,6 +235,24 @@ file of vectors. Re-ingesting a file replaces its old chunks. `--chunker` picks 
 `sentence-transformers`. Use the same embedder for `ingest` and `ask`. `ask` prints the answer
 followed by the cited sources; the LLM needs the matching extra and credentials (see
 `.env.example`).
+
+## Evaluating retrieval
+
+A dataset is a JSONL file with one question per line and the documents that answer it:
+
+```json
+{"question": "How do I install it?", "relevant": ["a.md"]}
+```
+
+An entry matches a retrieved chunk when its path equals the entry or ends with `/<entry>`.
+Results are judged per document (repeat chunks of one document count once).
+
+```sh
+docsage eval questions.jsonl --home .docsage --k 5
+```
+
+This prints recall@k, MRR and nDCG@k averaged over the questions. From Python, use
+`docsage.eval.evaluate(retriever, load_dataset(path), k=5)`.
 
 ## HTTP API
 

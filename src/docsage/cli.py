@@ -17,6 +17,7 @@ from docsage.chunking import (
     chunk_documents,
 )
 from docsage.embeddings import load_embedder
+from docsage.eval import evaluate, load_dataset
 from docsage.llm import LLM, load_llm
 from docsage.loaders import load_file
 from docsage.workspace import Workspace
@@ -127,6 +128,26 @@ def stats(
     s = _open(home, embedder).stats()
     typer.echo(f"documents: {s['documents']}")
     typer.echo(f"chunks: {s['chunks']}")
+
+
+@app.command(name="eval")
+def eval_command(
+    dataset: Annotated[Path, typer.Argument(help="JSONL file of questions and relevant paths.")],
+    home: Home = Path(".docsage"),
+    k: Annotated[int, typer.Option(help="Cutoff for recall@k and nDCG@k.")] = 5,
+    embedder: EmbedderOpt = "hashing",
+) -> None:
+    """Measure retrieval quality (recall@k, MRR, nDCG@k) against a labelled dataset."""
+    try:
+        examples = load_dataset(dataset)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    report = evaluate(_open(home, embedder).retriever(), examples, k=k)
+    typer.echo(f"questions: {report.questions}")
+    typer.echo(f"recall@{k}: {report.recall:.3f}")
+    typer.echo(f"mrr: {report.mrr:.3f}")
+    typer.echo(f"ndcg@{k}: {report.ndcg:.3f}")
 
 
 @app.command()
