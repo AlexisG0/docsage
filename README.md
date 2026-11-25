@@ -221,6 +221,22 @@ answer = answer_question(ScriptedLLM(["RRF merges ranked lists [1]."]), "What is
 print(answer.text, [s.path for s in answer.sources])
 ```
 
+## Faithfulness check
+
+`check_faithfulness` asks a judge whether each claim in an answer is supported by the
+retrieved passages. `LLMJudge` works with any `LLM`; implement the `Judge` protocol to plug
+in something else. The report has a `score` (share of supported claims) and the list of
+`unsupported` claims. With no passages the judge is not called and the score is 0.
+
+```python
+from docsage.faithfulness import LLMJudge, check_faithfulness
+from docsage.llm import ScriptedLLM
+
+verdict = '{"claims": [{"claim": "RRF merges ranked lists", "supported": true}]}'
+report = check_faithfulness(LLMJudge(ScriptedLLM([verdict])), answer.text, hits)
+print(report.score, report.unsupported)
+```
+
 ## Command line
 
 ```sh
