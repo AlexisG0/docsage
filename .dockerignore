@@ -1,0 +1,8 @@
+.git
+.venv
+.env
+.docsage
+scratch
+tests
+__pycache__
+.*_cache

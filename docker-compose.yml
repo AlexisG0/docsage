@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # The index lives in the named volume so it survives restarts.
+      DOCSAGE_HOME: /data
+    volumes:
+      - docsage-data:/data
+    restart: unless-stopped
+
+volumes:
+  docsage-data:

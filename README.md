@@ -295,6 +295,19 @@ curl localhost:8000/health
 paths from its own disk) and replaces anything already indexed under the same `path`. `/query`
 returns `{"answer": ..., "sources": [...]}` with the numbered sources the answer cites.
 
+### Docker
+
+```sh
+cp .env.example .env   # set the provider keys you need
+docker compose up --build
+curl localhost:8000/health
+```
+
+The image runs the API as a non-root user and keeps the index in the `docsage-data` volume,
+mounted at `/data` (`DOCSAGE_HOME`). Variables from `.env` are passed to the container; note that
+`OLLAMA_HOST=http://localhost:11434` must point at a reachable host from inside the container,
+for example `http://host.docker.internal:11434`.
+
 ## Development
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
