@@ -21,6 +21,15 @@ def _client(tmp_path: Path, replies: list[str] | None = None) -> tuple[TestClien
     return TestClient(create_app(ws, fake)), fake
 
 
+def test_ingest_skips_unchanged_documents(tmp_path: Path) -> None:
+    client, _ = _client(tmp_path)
+    first = client.post("/ingest", json=DOCS).json()
+    second = client.post("/ingest", json=DOCS).json()
+    assert first["unchanged"] == 0
+    assert second["unchanged"] == 2 and second["chunks"] == 0
+    assert second["total_chunks"] == first["total_chunks"]
+
+
 def test_health_reports_empty_index(tmp_path: Path) -> None:
     client, _ = _client(tmp_path)
     body = client.get("/health").json()

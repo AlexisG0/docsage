@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -20,7 +21,7 @@ from docsage.embeddings import load_embedder
 from docsage.eval import evaluate, load_dataset
 from docsage.llm import LLM, load_llm
 from docsage.loaders import load_file
-from docsage.workspace import Workspace
+from docsage.workspace import Workspace, content_hash
 
 app = typer.Typer(help="Ask questions about your technical docs.", no_args_is_help=True)
 
@@ -67,8 +68,14 @@ def ingest(
     home: Home = Path(".docsage"),
     chunker: Annotated[str, typer.Option(help="recursive, fixed or sentence.")] = "recursive",
     embedder: EmbedderOpt = "hashing",
+    prune: Annotated[
+        bool, typer.Option(help="Drop indexed files under the given directories that are gone.")
+    ] = False,
 ) -> None:
-    """Load, chunk and index documents. Re-ingesting a file replaces its old chunks."""
+    """Load, chunk and index documents.
+
+    Unchanged files are skipped and edited ones are re-indexed in place.
+    """
     files: list[Path] = []
     for p in paths:
         if not p.exists():
@@ -80,21 +87,34 @@ def ingest(
             files.append(p)
     ws = _open(home, embedder)
     strategy = _chunker(chunker)
-    total = 0
+    total = unchanged = 0
     for f in files:
+        digest = content_hash(f.read_bytes(), chunker)
+        if ws.is_current(str(f), digest):
+            unchanged += 1
+            continue
         try:
             docs = load_file(f)
         except ValueError as exc:
             typer.echo(f"skipping {f}: {exc}", err=True)
             continue
         chunks = chunk_documents(docs, strategy)
-        ws.replace(docs[0].path, chunks)
+        ws.replace(docs[0].path, chunks, digest)
         total += len(chunks)
+    removed = 0
+    if prune:
+        seen = {str(f) for f in files}
+        roots = [str(p) + os.sep for p in paths if p.is_dir()]
+        for indexed in ws.paths():
+            if indexed not in seen and any(indexed.startswith(r) for r in roots):
+                ws.remove(indexed)
+                removed += 1
     ws.save()
     stats = ws.stats()
     typer.echo(
-        f"indexed {total} chunks from {len(files)} files "
-        f"({stats['documents']} documents, {stats['chunks']} chunks in the index)"
+        f"indexed {total} chunks from {len(files) - unchanged} files "
+        f"({unchanged} unchanged, {removed} removed; "
+        f"{stats['documents']} documents, {stats['chunks']} chunks in the index)"
     )
 
 

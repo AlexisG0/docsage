@@ -246,7 +246,10 @@ docsage ask "How do I configure X?" --llm ollama --model llama3 --k 5
 ```
 
 The index lives in `--home` (default `.docsage`, or `DOCSAGE_HOME`): a BM25 file plus a JSON
-file of vectors. Re-ingesting a file replaces its old chunks. `--chunker` picks `recursive`,
+file of vectors. Ingestion is incremental: each file is stored with a hash of its content and the
+chunker, so re-running `ingest` skips unchanged files, re-indexes edited ones in place and only
+embeds chunk texts it has not seen before. Add `--prune` to drop indexed files that no longer
+exist under the directories you pass. `--chunker` picks `recursive`,
 `fixed` or `sentence`; `--embedder` picks `hashing` (default, offline) or
 `sentence-transformers`. Use the same embedder for `ingest` and `ask`. `ask` prints the answer
 followed by the cited sources; the LLM needs the matching extra and credentials (see

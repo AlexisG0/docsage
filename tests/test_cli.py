@@ -57,3 +57,30 @@ def test_reingest_replaces_instead_of_duplicating(tmp_path: Path) -> None:
 def test_ingest_missing_path_fails(tmp_path: Path) -> None:
     r = runner.invoke(app, ["ingest", str(tmp_path / "nope"), "--home", str(tmp_path / "i")])
     assert r.exit_code == 1
+
+
+def test_reingest_skips_unchanged_and_updates_edited(tmp_path: Path) -> None:
+    home = tmp_path / "idx"
+    docs = _docs(tmp_path)
+    runner.invoke(app, ["ingest", str(docs), "--home", str(home)])
+
+    r = runner.invoke(app, ["ingest", str(docs), "--home", str(home)])
+    assert "indexed 0 chunks from 0 files (2 unchanged" in r.stdout
+
+    (docs / "a.md").write_text("# Install\n\nUse uv add docsage instead.\n")
+    r = runner.invoke(app, ["ingest", str(docs), "--home", str(home)])
+    assert "from 1 files (1 unchanged" in r.stdout
+    assert "2 documents" in r.stdout
+
+
+def test_ingest_prune_removes_deleted_files(tmp_path: Path) -> None:
+    home = tmp_path / "idx"
+    docs = _docs(tmp_path)
+    runner.invoke(app, ["ingest", str(docs), "--home", str(home)])
+    (docs / "b.md").unlink()
+
+    r = runner.invoke(app, ["ingest", str(docs), "--home", str(home)])
+    assert "2 documents" in r.stdout
+    r = runner.invoke(app, ["ingest", str(docs), "--home", str(home), "--prune"])
+    assert "1 removed" in r.stdout
+    assert "1 documents" in r.stdout

@@ -26,7 +26,7 @@ from docsage.chunking import (
 from docsage.embeddings import Embedder, load_embedder
 from docsage.llm import LLM, load_llm
 from docsage.loaders import load_file
-from docsage.workspace import Workspace
+from docsage.workspace import Workspace, content_hash
 
 _TEXT_SUFFIXES = {".md", ".markdown", ".html", ".htm"}
 _CHUNKERS: dict[str, Callable[[], Chunker]] = {
@@ -70,6 +70,7 @@ class IngestResponse(BaseModel):
     chunks: int
     total_documents: int
     total_chunks: int
+    unchanged: int = 0
 
 
 class QueryRequest(BaseModel):
@@ -157,16 +158,20 @@ def create_app(
             if PurePosixPath(d.path).suffix.lower() not in _TEXT_SUFFIXES:
                 raise HTTPException(422, f"unsupported file type for {d.path!r}; use .md or .html")
         strategy = _CHUNKERS[req.chunker]()
-        total = 0
+        total = unchanged = 0
         with tempfile.TemporaryDirectory() as tmp:
             for i, d in enumerate(req.documents):
+                digest = content_hash(d.content, req.chunker)
+                if ws.is_current(d.path, digest):
+                    unchanged += 1
+                    continue
                 src = Path(tmp) / f"{i}{PurePosixPath(d.path).suffix.lower()}"
                 src.write_text(d.content, encoding="utf-8")
                 docs = [doc.model_copy(update={"path": d.path}) for doc in load_file(src)]
                 if docs and docs[0].title == src.stem:
                     docs[0] = docs[0].model_copy(update={"title": PurePosixPath(d.path).stem})
                 chunks = chunk_documents(docs, strategy)
-                ws.replace(d.path, chunks)
+                ws.replace(d.path, chunks, digest)
                 total += len(chunks)
         ws.save()
         stats = ws.stats()
@@ -175,6 +180,7 @@ def create_app(
             chunks=total,
             total_documents=stats["documents"],
             total_chunks=stats["chunks"],
+            unchanged=unchanged,
         )
 
     @app.post("/query", response_model=QueryResponse, summary="Ask a question")
